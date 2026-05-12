@@ -122,7 +122,10 @@ body {
   margin-bottom: 18px;
 }
 @media (min-width: 600px) {
-  .summary-grid { grid-template-columns: repeat(4, 1fr); }
+  .summary-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 900px) {
+  .summary-grid { grid-template-columns: repeat(5, 1fr); }
 }
 .summary-card {
   border-radius: 14px;
@@ -156,6 +159,54 @@ body {
 .summary-card.redd .summary-value { color: var(--red); }
 .summary-card.blue .summary-label,
 .summary-card.blue .summary-value { color: var(--blue); }
+.summary-card.purple { background: var(--purple-light); border: 1px solid #c4b5fd; }
+.summary-card.purple .summary-label,
+.summary-card.purple .summary-value { color: var(--purple); }
+
+/* ── Recent expenses list on dashboard ── */
+.dash-exp-item { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:0.88rem; }
+.dash-exp-item:last-child { border-bottom:none; }
+.dash-exp-left { display:flex; flex-direction:column; gap:2px; }
+.dash-exp-name { font-weight:600; }
+.dash-exp-meta { font-size:0.76rem; color:var(--text-muted); }
+.dash-exp-amt  { font-weight:700; color:var(--purple); white-space:nowrap; margin-left:12px; }
+
+/* ── Budget tab — plan selector ── */
+.plan-selector { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:4px; }
+.plan-sel-btn {
+  padding:8px 16px; border-radius:20px; border:2px solid var(--border);
+  background:white; cursor:pointer; font-size:0.82rem; font-weight:700;
+  transition:all 0.15s; color:var(--text);
+}
+.plan-sel-btn:hover  { border-color:var(--blue); color:var(--blue); }
+.plan-sel-btn.active { background:var(--blue); color:white; border-color:var(--blue); }
+
+/* ── Budget tab — progress bars ── */
+.budget-bucket { margin-bottom:20px; }
+.budget-bucket:last-child { margin-bottom:0; }
+.budget-bucket-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; flex-wrap:wrap; gap:4px; }
+.budget-bucket-label { font-weight:700; font-size:0.95rem; }
+.budget-bucket-sub   { font-size:0.78rem; color:var(--text-muted); }
+.budget-bucket-nums  { font-size:0.85rem; font-weight:600; white-space:nowrap; }
+.budget-bar-track    { background:#e5e7eb; border-radius:8px; height:16px; overflow:hidden; margin-bottom:4px; }
+.budget-bar-fill     { height:100%; border-radius:8px; transition:width 0.6s ease; }
+.budget-bar-fill.good { background:var(--green); }
+.budget-bar-fill.warn { background:var(--orange); }
+.budget-bar-fill.over { background:var(--red); }
+.budget-bar-fill.info { background:var(--blue); }
+.budget-bar-status { font-size:0.8rem; font-weight:600; }
+.budget-bar-status.good { color:var(--green); }
+.budget-bar-status.warn { color:var(--orange); }
+.budget-bar-status.over { color:var(--red); }
+
+/* ── Budget tab — per-paycheck table ── */
+.paycheck-table { width:100%; border-collapse:collapse; font-size:0.88rem; }
+.paycheck-table th { text-align:left; padding:8px 10px; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-muted); border-bottom:2px solid var(--border); }
+.paycheck-table td { padding:9px 10px; border-bottom:1px solid var(--border); }
+.paycheck-table tr:last-child td { border-bottom:none; }
+.paycheck-table td.bucket-name { font-weight:700; }
+.paycheck-table td.bucket-pct  { color:var(--text-muted); font-size:0.82rem; }
+.paycheck-table td.bucket-amt  { font-weight:800; text-align:right; }
 
 /* ── Health Badge ── */
 .health-badge {
@@ -450,6 +501,18 @@ input::placeholder { color: #c1c9d4; }
 .pay-year-table .past-month { color: var(--text-muted); }
 .pay-year-table .total-row td { background: var(--gray-light); font-weight: 700; }
 
+/* ── Bill payment status ── */
+.bill-pay-row { display:flex; align-items:center; gap:10px; margin-top:6px; padding-top:6px; border-top:1px solid var(--border); flex-wrap:wrap; }
+.bill-pay-status { font-size:0.82rem; font-weight:700; flex:1; min-width:120px; }
+.bill-pay-status.paid     { color:var(--green); }
+.bill-pay-status.partial  { color:var(--orange); }
+.bill-pay-status.unpaid   { color:var(--text-muted); }
+.bill-pay-quick { display:flex; gap:6px; flex-wrap:wrap; }
+.bill-summary-row { display:flex; justify-content:space-between; align-items:baseline; padding:7px 0; border-bottom:1px solid var(--border); font-size:0.88rem; }
+.bill-summary-row:last-child { border-bottom:none; }
+.bill-summary-label { color:var(--text-muted); }
+.bill-summary-val   { font-weight:700; }
+
 /* ── Pay log (hourly) ── */
 .paylog-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
 .paylog-item:last-child { border-bottom: none; }
@@ -506,7 +569,8 @@ input::placeholder { color: #c1c9d4; }
   <button class="tab-btn" data-tab="bills"     onclick="switchTab('bills')">📋 Bills</button>
   <button class="tab-btn" data-tab="debts"     onclick="switchTab('debts')">💳 Debts</button>
   <button class="tab-btn" data-tab="expenses"  onclick="switchTab('expenses')">🛒 Expenses</button>
-  <button class="tab-btn" data-tab="plans"     onclick="switchTab('plans')">📐 Budget Plans</button>
+  <button class="tab-btn" data-tab="budget"    onclick="switchTab('budget')">🎯 Budget</button>
+  <button class="tab-btn" data-tab="plans"     onclick="switchTab('plans')">📐 Plans</button>
 </nav>
 
 <!-- ══════════════════════════════════════════════
@@ -532,10 +596,25 @@ input::placeholder { color: #c1c9d4; }
         <div class="summary-label">Debt Payments</div>
         <div class="summary-value" id="sumDebtMin">$0</div>
       </div>
+      <div class="summary-card purple">
+        <div class="summary-label">Expenses This Month</div>
+        <div class="summary-value" id="sumExpenses">$0</div>
+      </div>
       <div class="summary-card blue" id="remainingCard">
         <div class="summary-label">Left Over</div>
         <div class="summary-value" id="sumRemaining">$0</div>
       </div>
+    </div>
+
+    <div id="dashSpendMeterWrap" class="card" style="padding:14px 18px;display:none">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <span style="font-weight:700;font-size:0.88rem">This Month's Spending vs Income</span>
+        <span id="dashSpendPct" style="font-size:0.82rem;font-weight:700;color:var(--text-muted)">0%</span>
+      </div>
+      <div class="budget-bar-track">
+        <div id="dashSpendBar" class="budget-bar-fill info" style="width:0%"></div>
+      </div>
+      <div id="dashSpendLabel" style="font-size:0.78rem;color:var(--text-muted);margin-top:4px"></div>
     </div>
 
     <div class="charts-grid">
@@ -574,6 +653,14 @@ input::placeholder { color: #c1c9d4; }
           <button class="btn btn-green" onclick="quickAddExpense()">➕ Add Expense</button>
         </div>
       </div>
+    </div>
+
+    <div class="card" id="dashRecentExpCard" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="card-title" style="margin:0">🛒 Recent Expenses</div>
+        <button class="btn btn-ghost btn-sm" onclick="switchTab('expenses')">View All →</button>
+      </div>
+      <div id="dashRecentExp"></div>
     </div>
 
   </section>
@@ -652,8 +739,12 @@ input::placeholder { color: #c1c9d4; }
           <input type="text" id="billName" placeholder="e.g. Electric Bill, Netflix">
         </div>
         <div class="form-group">
-          <label>Amount ($)</label>
+          <label>Statement Amount ($)</label>
           <input type="number" id="billAmount" placeholder="0.00" min="0" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Minimum Payment ($)</label>
+          <input type="number" id="billMinimum" placeholder="Same as amount" min="0" step="0.01">
         </div>
         <div class="form-group">
           <label>Due Day of Month</label>
@@ -680,6 +771,11 @@ input::placeholder { color: #c1c9d4; }
         <span>Total Monthly Bills</span>
         <span id="billTotal" style="color:var(--orange)">$0</span>
       </div>
+    </div>
+
+    <div class="card" id="billSummaryCard" style="display:none">
+      <div class="card-title">📊 This Month's Payment Summary</div>
+      <div id="billSummaryRows"></div>
     </div>
 
   </section>
@@ -785,6 +881,44 @@ input::placeholder { color: #c1c9d4; }
 
   </section>
 
+  <!-- ─────────────── BUDGET ─────────────── -->
+  <section class="tab-content" id="tab-budget">
+
+    <div class="card" id="budgetNoIncomeNotice" style="display:none">
+      <div style="text-align:center;padding:20px 0;color:var(--text-muted)">
+        <div style="font-size:2.5rem;margin-bottom:10px">🎯</div>
+        <p style="font-size:0.95rem">Add your income first so we can calculate your budget targets.</p>
+      </div>
+    </div>
+
+    <div id="budgetContent">
+
+      <!-- Plan selector -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px">🎯 Choose Your Budget Plan</div>
+        <div class="plan-selector" id="budgetPlanSelector"></div>
+        <div id="budgetPlanDesc" style="margin-top:12px;font-size:0.85rem;color:var(--text-muted);line-height:1.55"></div>
+      </div>
+
+      <!-- Per-paycheck breakdown -->
+      <div class="card" id="budgetPerCheckCard">
+        <div class="card-title">💵 Per Paycheck Allocation</div>
+        <div id="budgetPerCheck"></div>
+      </div>
+
+      <!-- Monthly comparison -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px">
+          <div class="card-title" style="margin:0">📊 Monthly Comparison</div>
+          <span id="budgetMonthLabel" style="font-size:0.82rem;color:var(--text-muted);font-weight:600"></span>
+        </div>
+        <div id="budgetMonthlyBars"></div>
+      </div>
+
+    </div>
+
+  </section>
+
   <!-- ─────────────── BUDGET PLANS ─────────────── -->
   <section class="tab-content" id="tab-plans">
 
@@ -868,6 +1002,29 @@ input::placeholder { color: #c1c9d4; }
 </div>
 
 <!-- ══════════════════════════════════════════════
+     BILL PAYMENT MODAL
+══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="billPayModal">
+  <div class="modal-box">
+    <div class="modal-title" id="billPayModalTitle">💳 Log Bill Payment</div>
+    <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px" id="billPayModalSub"></div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap" id="billPayQuickBtns"></div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Amount Paid ($)</label>
+      <input type="number" id="billPayAmount" placeholder="0.00" min="0.01" step="0.01">
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label>Payment Date</label>
+      <input type="date" id="billPayDate">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeBillPayModal()">Cancel</button>
+      <button class="btn btn-orange" onclick="submitBillPayment()">✅ Log Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
      LOG PAYCHECK MODAL
 ══════════════════════════════════════════════ -->
 <div class="modal-overlay" id="payLogModal">
@@ -898,6 +1055,7 @@ input::placeholder { color: #c1c9d4; }
 let appData = { income: [], bills: [], debts: [], expenses: [], payLog: [] };
 let editState = { type: null, id: null };
 let paymentState = { debtId: null };
+let billPayState = { billId: null };
 let deleteState = { type: null, id: null };
 let payLogState = { incomeId: null };
 
@@ -1085,7 +1243,7 @@ function switchTab(tabName) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tabName).classList.add('active');
   document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-  const renders = { dashboard: renderDashboard, income: renderIncome, bills: renderBills, debts: renderDebts, expenses: renderExpenses, plans: renderBudgetPlans };
+  const renders = { dashboard: renderDashboard, income: renderIncome, bills: renderBills, debts: renderDebts, expenses: renderExpenses, budget: renderBudgetTab, plans: renderBudgetPlans };
   if (renders[tabName]) renders[tabName]();
 }
 
@@ -1108,10 +1266,49 @@ function calcSummary() {
 function renderDashboard() {
   const { totalIncome, totalBills, totalDebtMin, monthExp, remaining } = calcSummary();
 
-  document.getElementById('sumIncome').textContent   = fmt(totalIncome);
-  document.getElementById('sumBills').textContent    = fmt(totalBills);
-  document.getElementById('sumDebtMin').textContent  = fmt(totalDebtMin);
+  document.getElementById('sumIncome').textContent    = fmt(totalIncome);
+  document.getElementById('sumBills').textContent     = fmt(totalBills);
+  document.getElementById('sumDebtMin').textContent   = fmt(totalDebtMin);
+  document.getElementById('sumExpenses').textContent  = fmt(monthExp);
   document.getElementById('sumRemaining').textContent = fmt(remaining);
+
+  // ── Spending meter ──
+  const meterWrap = document.getElementById('dashSpendMeterWrap');
+  if (totalIncome > 0) {
+    const totalSpent = totalBills + totalDebtMin + monthExp;
+    const spendPct   = Math.min((totalSpent / totalIncome) * 100, 100);
+    const rawPct     = (totalSpent / totalIncome) * 100;
+    const barClass   = rawPct > 100 ? 'over' : rawPct > 85 ? 'warn' : 'good';
+    document.getElementById('dashSpendBar').style.width = spendPct.toFixed(1) + '%';
+    document.getElementById('dashSpendBar').className   = `budget-bar-fill ${barClass}`;
+    document.getElementById('dashSpendPct').textContent = rawPct.toFixed(0) + '% of income spent';
+    document.getElementById('dashSpendLabel').textContent = rawPct > 100
+      ? `Over budget by ${fmt(totalSpent - totalIncome)}`
+      : `${fmt(totalIncome - totalSpent)} remaining after bills, debts & expenses`;
+    meterWrap.style.display = 'block';
+  } else {
+    meterWrap.style.display = 'none';
+  }
+
+  // ── Recent expenses ──
+  const recentCard = document.getElementById('dashRecentExpCard');
+  const recentEl   = document.getElementById('dashRecentExp');
+  const recentExps = [...appData.expenses]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 7);
+  if (recentExps.length > 0) {
+    recentEl.innerHTML = recentExps.map(e => `
+      <div class="dash-exp-item">
+        <div class="dash-exp-left">
+          <div class="dash-exp-name">${esc(e.description)}</div>
+          <div class="dash-exp-meta">${e.date} &nbsp;·&nbsp; <span class="chip chip-gray" style="font-size:0.72rem;padding:1px 7px">${esc(e.category)}</span></div>
+        </div>
+        <div class="dash-exp-amt">−${fmt(e.amount)}</div>
+      </div>`).join('');
+    recentCard.style.display = 'block';
+  } else {
+    recentCard.style.display = 'none';
+  }
 
   // Health badge + remaining card color
   const badge = document.getElementById('healthBadge');
@@ -1541,72 +1738,201 @@ function toggleEditLastPayDate() {
 // BILLS
 // ============================================================
 function addBill() {
-  const name     = document.getElementById('billName').value.trim();
-  const amount   = parseFloat(document.getElementById('billAmount').value);
-  const dueDay   = parseInt(document.getElementById('billDueDay').value) || 1;
-  const category = document.getElementById('billCategory').value;
-  if (!name)              { alert('Please enter a name for this bill.'); return; }
+  const name        = document.getElementById('billName').value.trim();
+  const amount      = parseFloat(document.getElementById('billAmount').value);
+  const minimumRaw  = parseFloat(document.getElementById('billMinimum').value);
+  const minimum     = (!isNaN(minimumRaw) && minimumRaw > 0) ? minimumRaw : null;
+  const dueDay      = parseInt(document.getElementById('billDueDay').value) || 1;
+  const category    = document.getElementById('billCategory').value;
+  if (!name)                  { alert('Please enter a name for this bill.'); return; }
   if (!amount || amount <= 0) { alert('Please enter a valid amount.'); return; }
-  appData.bills.push({ id: uuid(), name, amount, dueDay, category, paidMonths: [] });
+  appData.bills.push({ id: uuid(), name, amount, minimum, dueDay, category, paidMonths: [], actualPayments: {} });
   saveData();
-  document.getElementById('billName').value = '';
-  document.getElementById('billAmount').value = '';
-  document.getElementById('billDueDay').value = '';
+  document.getElementById('billName').value    = '';
+  document.getElementById('billAmount').value  = '';
+  document.getElementById('billMinimum').value = '';
+  document.getElementById('billDueDay').value  = '';
   renderBills();
   renderDashboard();
   showToast('Bill added! ✓');
 }
 
-function toggleBillPaid(id) {
+function clearBillPayment(id) {
   const bill = appData.bills.find(b => b.id === id);
   if (!bill) return;
   const mk = currentMonthKey();
-  if (bill.paidMonths.includes(mk)) {
-    bill.paidMonths = bill.paidMonths.filter(m => m !== mk);
-  } else {
-    bill.paidMonths.push(mk);
-  }
+  if (bill.actualPayments) delete bill.actualPayments[mk];
+  bill.paidMonths = (bill.paidMonths || []).filter(m => m !== mk);
   saveData();
   renderBills();
+  renderDashboard();
 }
 
 function renderBills() {
-  const container = document.getElementById('billItems');
-  const totalRow  = document.getElementById('billTotalRow');
+  const container  = document.getElementById('billItems');
+  const totalRow   = document.getElementById('billTotalRow');
+  const summaryCard = document.getElementById('billSummaryCard');
   const mk = currentMonthKey();
+
   if (appData.bills.length === 0) {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>No bills added yet.<br><strong>Click "➕ Add" above to add your first bill!</strong></p></div>`;
-    totalRow.style.display = 'none';
+    totalRow.style.display   = 'none';
+    summaryCard.style.display = 'none';
     return;
   }
-  let total = 0;
+
+  let totalDue = 0, totalMin = 0, totalPaid = 0;
+
   container.innerHTML = appData.bills.map(bill => {
-    total += bill.amount;
-    const isPaid = bill.paidMonths.includes(mk);
+    const payments = bill.actualPayments || {};
+    const paid     = payments[mk] ?? (bill.paidMonths?.includes(mk) ? bill.amount : 0);
+    const minAmt   = bill.minimum ?? bill.amount;
+    const due      = bill.amount;
+
+    totalDue  += due;
+    totalMin  += minAmt;
+    totalPaid += paid;
+
+    // Payment status
+    let statusClass, statusText, quickBtns;
+    if (paid >= due) {
+      statusClass = 'paid';
+      statusText  = `✅ Paid in full — ${fmt(paid)}`;
+      quickBtns   = `<button class="btn btn-sm btn-ghost" onclick="clearBillPayment('${bill.id}')">✕ Clear</button>`;
+    } else if (paid > 0) {
+      const remaining = due - paid;
+      statusClass = 'partial';
+      statusText  = `⚠️ Partial — ${fmt(paid)} paid, ${fmt(remaining)} remaining`;
+      quickBtns   = `<button class="btn btn-sm btn-ghost" onclick="clearBillPayment('${bill.id}')">✕ Clear</button>`;
+    } else {
+      statusClass = 'unpaid';
+      statusText  = `⬜ Unpaid — ${fmt(due)} due`;
+      quickBtns   = `
+        <button class="btn btn-sm btn-green"  onclick="quickBillPay('${bill.id}','full')">Pay Full ${fmt(due)}</button>
+        ${minAmt < due ? `<button class="btn btn-sm btn-ghost" onclick="quickBillPay('${bill.id}','min')">Pay Min ${fmt(minAmt)}</button>` : ''}
+        <button class="btn btn-sm btn-ghost"  onclick="openLogBillPayment('${bill.id}')">Custom</button>`;
+    }
+
+    const minLine = (bill.minimum && bill.minimum < bill.amount)
+      ? `<span style="color:var(--text-muted);font-size:0.78rem">min ${fmt(bill.minimum)}</span>`
+      : '';
+
     return `
-      <div class="list-item">
-        <div class="item-info">
-          <div class="item-name">${esc(bill.name)}</div>
-          <div class="item-meta">
-            <span class="chip ${chipColor(bill.category)}">${bill.category}</span>
-            <span>Due the ${ordinal(bill.dueDay)}</span>
+      <div class="list-item" style="flex-direction:column;align-items:stretch;gap:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div class="item-info" style="flex:1;min-width:160px">
+            <div class="item-name">${esc(bill.name)}</div>
+            <div class="item-meta">
+              <span class="chip ${chipColor(bill.category)}">${bill.category}</span>
+              <span>Due the ${ordinal(bill.dueDay)}</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-left:auto">
+            <div style="text-align:right">
+              <div class="item-amount" style="color:var(--orange)">${fmt(due)}</div>
+              ${minLine}
+            </div>
+            <div class="item-actions">
+              <button class="btn btn-icon btn-sm" title="Log Payment" onclick="openLogBillPayment('${bill.id}')">💳</button>
+              <button class="btn btn-icon btn-sm" title="Edit" onclick="openEditBill('${bill.id}')">✏️</button>
+              <button class="btn btn-icon btn-sm" title="Delete" onclick="confirmDelete('bills','${bill.id}')">🗑️</button>
+            </div>
           </div>
         </div>
-        <div class="bill-right">
-          <div class="item-amount" style="color:var(--orange)">${fmt(bill.amount)}</div>
-          <button class="btn btn-sm ${isPaid ? 'btn-green' : 'btn-ghost'}"
-            onclick="toggleBillPaid('${bill.id}')" title="${isPaid ? 'Click to mark unpaid' : 'Click to mark paid'}">
-            ${isPaid ? '✅ Paid' : '⬜ Unpaid'}
-          </button>
-        </div>
-        <div class="item-actions">
-          <button class="btn btn-icon btn-sm" title="Edit" onclick="openEditBill('${bill.id}')">✏️</button>
-          <button class="btn btn-icon btn-sm" title="Delete" onclick="confirmDelete('bills','${bill.id}')">🗑️</button>
+        <div class="bill-pay-row">
+          <div class="bill-pay-status ${statusClass}">${statusText}</div>
+          <div class="bill-pay-quick">${quickBtns}</div>
         </div>
       </div>`;
   }).join('');
+
   totalRow.style.display = 'flex';
-  document.getElementById('billTotal').textContent = fmt(total);
+  document.getElementById('billTotal').textContent = fmt(totalDue);
+
+  // Summary card
+  const remaining = Math.max(0, totalDue - totalPaid);
+  const paidCount = appData.bills.filter(b => {
+    const p = (b.actualPayments || {})[mk] ?? (b.paidMonths?.includes(mk) ? b.amount : 0);
+    return p > 0;
+  }).length;
+  document.getElementById('billSummaryRows').innerHTML = `
+    <div class="bill-summary-row">
+      <span class="bill-summary-label">Total Due This Month</span>
+      <span class="bill-summary-val" style="color:var(--orange)">${fmt(totalDue)}</span>
+    </div>
+    <div class="bill-summary-row">
+      <span class="bill-summary-label">Total Minimum Required</span>
+      <span class="bill-summary-val">${fmt(totalMin)}</span>
+    </div>
+    <div class="bill-summary-row">
+      <span class="bill-summary-label">Total Paid (${paidCount} of ${appData.bills.length} bills)</span>
+      <span class="bill-summary-val" style="color:var(--green)">${fmt(totalPaid)}</span>
+    </div>
+    <div class="bill-summary-row">
+      <span class="bill-summary-label">Still Owed</span>
+      <span class="bill-summary-val" style="color:${remaining > 0 ? 'var(--red)' : 'var(--green)'}">${remaining > 0 ? fmt(remaining) : '✅ All Paid'}</span>
+    </div>`;
+  summaryCard.style.display = 'block';
+}
+
+function openLogBillPayment(id) {
+  const bill = appData.bills.find(b => b.id === id);
+  if (!bill) return;
+  billPayState.billId = id;
+  document.getElementById('billPayModalTitle').textContent = `💳 Log Payment — ${bill.name}`;
+  document.getElementById('billPayModalSub').textContent   =
+    `Statement: ${fmt(bill.amount)}${bill.minimum && bill.minimum < bill.amount ? '  ·  Minimum: ' + fmt(bill.minimum) : ''}`;
+  // Quick-fill buttons
+  const btns = [`<button class="btn btn-sm btn-orange" onclick="document.getElementById('billPayAmount').value='${bill.amount}'">Full ${fmt(bill.amount)}</button>`];
+  if (bill.minimum && bill.minimum < bill.amount) {
+    btns.push(`<button class="btn btn-sm btn-ghost" onclick="document.getElementById('billPayAmount').value='${bill.minimum}'">Minimum ${fmt(bill.minimum)}</button>`);
+  }
+  document.getElementById('billPayQuickBtns').innerHTML = btns.join('');
+  document.getElementById('billPayAmount').value = bill.amount;
+  document.getElementById('billPayDate').value   = today();
+  document.getElementById('billPayModal').classList.add('open');
+}
+
+function closeBillPayModal() {
+  document.getElementById('billPayModal').classList.remove('open');
+  billPayState.billId = null;
+}
+
+function submitBillPayment() {
+  const bill   = appData.bills.find(b => b.id === billPayState.billId);
+  if (!bill) return;
+  const amount = parseFloat(document.getElementById('billPayAmount').value);
+  if (!amount || amount <= 0) { alert('Please enter a valid payment amount.'); return; }
+  if (!bill.actualPayments) bill.actualPayments = {};
+  bill.actualPayments[currentMonthKey()] = amount;
+  // Keep paidMonths in sync for backward compat
+  if (amount >= bill.amount) {
+    if (!(bill.paidMonths || []).includes(currentMonthKey())) bill.paidMonths = [...(bill.paidMonths || []), currentMonthKey()];
+  } else {
+    bill.paidMonths = (bill.paidMonths || []).filter(m => m !== currentMonthKey());
+  }
+  saveData();
+  closeBillPayModal();
+  renderBills();
+  renderDashboard();
+  showToast('Payment logged! ✓');
+}
+
+function quickBillPay(id, type) {
+  const bill = appData.bills.find(b => b.id === id);
+  if (!bill) return;
+  const amount = type === 'min' ? (bill.minimum ?? bill.amount) : bill.amount;
+  if (!bill.actualPayments) bill.actualPayments = {};
+  bill.actualPayments[currentMonthKey()] = amount;
+  if (amount >= bill.amount) {
+    if (!(bill.paidMonths || []).includes(currentMonthKey())) bill.paidMonths = [...(bill.paidMonths || []), currentMonthKey()];
+  } else {
+    bill.paidMonths = (bill.paidMonths || []).filter(m => m !== currentMonthKey());
+  }
+  saveData();
+  renderBills();
+  renderDashboard();
+  showToast(`Payment of ${fmt(amount)} logged! ✓`);
 }
 
 function openEditBill(id) {
@@ -1620,8 +1946,12 @@ function openEditBill(id) {
       <input type="text" id="eField1" value="${esc(item.name)}">
     </div>
     <div class="form-group" style="margin-bottom:13px">
-      <label>Amount ($)</label>
+      <label>Statement Amount ($)</label>
       <input type="number" id="eField2" value="${item.amount}" min="0" step="0.01">
+    </div>
+    <div class="form-group" style="margin-bottom:13px">
+      <label>Minimum Payment ($)</label>
+      <input type="number" id="eField5" value="${item.minimum ?? ''}" placeholder="Same as amount" min="0" step="0.01">
     </div>
     <div class="form-group" style="margin-bottom:13px">
       <label>Due Day of Month</label>
@@ -1905,6 +2235,8 @@ function saveEdit() {
     if (!item) return;
     item.name     = document.getElementById('eField1').value.trim() || item.name;
     item.amount   = parseFloat(document.getElementById('eField2').value) || item.amount;
+    const minRaw  = parseFloat(document.getElementById('eField5').value);
+    item.minimum  = (!isNaN(minRaw) && minRaw > 0) ? minRaw : null;
     item.dueDay   = parseInt(document.getElementById('eField3').value)   || item.dueDay;
     item.category = document.getElementById('eField4').value;
   } else if (type === 'debts') {
@@ -2008,9 +2340,194 @@ document.getElementById('editModal').addEventListener('click',    e => { if (e.t
 document.getElementById('confirmModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
 document.getElementById('paymentModal').addEventListener('click', e => { if (e.target === e.currentTarget) closePaymentModal(); });
 document.getElementById('payLogModal').addEventListener('click',  e => { if (e.target === e.currentTarget) closePayLogModal(); });
+document.getElementById('billPayModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeBillPayModal(); });
 
 // Initialise the last-pay-date field visibility on page load
 toggleIncLastPayDate();
+
+// ============================================================
+// BUDGET TAB
+// ============================================================
+let selectedBudgetPlan = localStorage.getItem('budgetSelectedPlan') || 'fifty-thirty-twenty';
+
+function selectBudgetPlan(planId) {
+  selectedBudgetPlan = planId;
+  localStorage.setItem('budgetSelectedPlan', planId);
+  renderBudgetTab();
+}
+
+function renderBudgetTab() {
+  const mk          = currentMonthKey();
+  const totalIncome = appData.income.reduce((s, i) => s + getIncomeForMonth(i, mk), 0);
+  const notice      = document.getElementById('budgetNoIncomeNotice');
+  const content     = document.getElementById('budgetContent');
+
+  if (totalIncome === 0) {
+    notice.style.display  = 'block';
+    content.style.display = 'none';
+    return;
+  }
+  notice.style.display  = 'none';
+  content.style.display = 'block';
+
+  const totalBills   = appData.bills.reduce((s, b) => s + b.amount, 0);
+  const totalDebtMin = appData.debts.reduce((s, d) => s + d.minimumPayment, 0);
+  const monthExp     = appData.expenses.filter(e => monthKey(e.date) === mk).reduce((s, e) => s + e.amount, 0);
+  const plan         = BUDGET_PLANS.find(p => p.id === selectedBudgetPlan) || BUDGET_PLANS[0];
+
+  // Plan selector pills
+  document.getElementById('budgetPlanSelector').innerHTML = BUDGET_PLANS.map(p => `
+    <button class="plan-sel-btn${p.id === plan.id ? ' active' : ''}" onclick="selectBudgetPlan('${p.id}')">${p.name}</button>
+  `).join('');
+  document.getElementById('budgetPlanDesc').innerHTML =
+    `<strong>${plan.name}</strong> — ${plan.desc}`;
+
+  // Month label
+  const [yr, mo] = mk.split('-');
+  document.getElementById('budgetMonthLabel').textContent =
+    new Date(+yr, +mo - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  _renderPerCheck(plan, totalIncome, totalBills, totalDebtMin, monthExp, mk);
+  _renderMonthlyBars(plan, totalIncome, totalBills, totalDebtMin, monthExp);
+}
+
+function _renderPerCheck(plan, totalIncome, totalBills, totalDebtMin, monthExp, mk) {
+  const el = document.getElementById('budgetPerCheck');
+
+  // Salary sources with a real per-check anchor
+  const anchoredItems = appData.income.filter(i =>
+    (i.payType || 'salary') === 'salary' &&
+    (i.frequency === 'weekly' || i.frequency === 'biweekly') &&
+    i.lastPayDate
+  );
+
+  function bucketRows(plan, checkAmt, monthlyAmt) {
+    if (plan.isZeroBased) {
+      // Zero-based has no fixed % — show a generic note
+      return `<tr><td colspan="3" style="color:var(--text-muted);font-size:0.85rem;padding:10px 0">
+        Zero-based budgeting assigns every dollar a job. See the Monthly Comparison below for your actual breakdown.
+      </td></tr>`;
+    }
+    return plan.buckets.map(b => {
+      const perChk  = checkAmt != null ? fmt(checkAmt * b.pct / 100) : '—';
+      const perMonth = fmt(monthlyAmt * b.pct / 100);
+      return `<tr>
+        <td class="bucket-name" style="color:${b.color}">${b.label}</td>
+        <td class="bucket-pct">${b.pct}%</td>
+        <td class="bucket-amt" style="color:${b.color}">${perChk}</td>
+        <td class="bucket-amt" style="color:${b.color}">${perMonth}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  const colHead = (label) => `<table class="paycheck-table">
+    <thead><tr>
+      <th>Category</th><th>%</th>
+      <th style="text-align:right">Per Check</th>
+      <th style="text-align:right">This Month</th>
+    </tr></thead><tbody>`;
+
+  let html = '';
+
+  if (anchoredItems.length > 0) {
+    anchoredItems.forEach(item => {
+      const paydays    = getPaydaysInMonth(item.lastPayDate, item.frequency, mk);
+      const monthlyAmt = item.amount * paydays;
+      html += `<p style="font-size:0.85rem;font-weight:700;color:var(--text-muted);margin-bottom:6px">
+        ${esc(item.name)} &nbsp;·&nbsp; ${fmt(item.amount)}/check &nbsp;·&nbsp;
+        <span style="color:var(--blue)">${paydays} payday${paydays !== 1 ? 's' : ''} this month = ${fmt(monthlyAmt)}</span>
+      </p>`;
+      html += colHead();
+      html += bucketRows(plan, item.amount, monthlyAmt);
+      html += `</tbody></table><div style="margin-bottom:18px"></div>`;
+    });
+  }
+
+  // Always show combined monthly
+  const hasMixed = appData.income.length > anchoredItems.length || anchoredItems.length === 0;
+  const sectionTitle = anchoredItems.length > 0
+    ? `<p style="font-size:0.85rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;border-top:1px solid var(--border);padding-top:14px">All Income Combined &nbsp;·&nbsp; <span style="color:var(--blue)">${fmt(totalIncome)} this month</span></p>`
+    : `<p style="font-size:0.85rem;font-weight:700;color:var(--text-muted);margin-bottom:6px">Monthly Income &nbsp;·&nbsp; <span style="color:var(--blue)">${fmt(totalIncome)}</span></p>`;
+  html += sectionTitle;
+  html += colHead();
+  html += bucketRows(plan, null, totalIncome);
+  html += `</tbody></table>`;
+
+  el.innerHTML = html;
+}
+
+function _renderMonthlyBars(plan, income, bills, debts, expenses) {
+  const fixed    = bills + debts;
+  const variable = expenses;
+  const savings  = Math.max(0, income - fixed - variable);
+
+  // Build bucket definitions per plan
+  let buckets;
+  if (plan.id === 'fifty-thirty-twenty') {
+    buckets = [
+      { label: 'Needs',           sub: 'Bills + Debt Payments — your fixed obligations',              pct: 50, target: income * 0.50, actual: fixed,    color: plan.buckets[0].color, savings: false },
+      { label: 'Wants',           sub: 'Logged Expenses — may include needs like groceries & gas',    pct: 30, target: income * 0.30, actual: variable, color: plan.buckets[1].color, savings: false },
+      { label: 'Savings & Debt Payoff', sub: 'Income left after all spending',                        pct: 20, target: income * 0.20, actual: savings,  color: plan.buckets[2].color, savings: true  },
+    ];
+  } else if (plan.id === 'seventy-twenty-ten') {
+    buckets = [
+      { label: 'Living Expenses', sub: 'Bills + Debts + Expenses combined',        pct: 70, target: income * 0.70, actual: fixed + variable, color: plan.buckets[0].color, savings: false },
+      { label: 'Savings',         sub: 'Income left after all spending',            pct: 20, target: income * 0.20, actual: savings,          color: plan.buckets[1].color, savings: true  },
+      { label: 'Giving / Extra',  sub: 'Discretionary — from your savings surplus', pct: 10, target: income * 0.10, actual: Math.max(0, savings - income * 0.20), color: plan.buckets[2].color, savings: true },
+    ];
+  } else if (plan.id === 'eighty-twenty') {
+    buckets = [
+      { label: 'Save First',   sub: 'Move this to savings the moment you get paid', pct: 20, target: income * 0.20, actual: savings,          color: plan.buckets[0].color, savings: true  },
+      { label: 'Spend Freely', sub: 'Bills + Debts + Expenses — everything else',   pct: 80, target: income * 0.80, actual: fixed + variable, color: plan.buckets[1].color, savings: false },
+    ];
+  } else {
+    // Zero-based
+    const unassigned = Math.max(0, income - fixed - variable);
+    buckets = [
+      { label: 'Bills (Fixed)',      sub: 'Recurring fixed bills',           pct: null, target: income, actual: bills,      color: '#dc2626', savings: false, rawAmt: bills },
+      { label: 'Debt Minimums',      sub: 'All minimum debt payments',       pct: null, target: income, actual: debts,      color: '#7c3aed', savings: false, rawAmt: debts },
+      { label: 'Variable Expenses',  sub: 'Logged discretionary spending',   pct: null, target: income, actual: variable,   color: '#ea580c', savings: false, rawAmt: variable },
+      { label: 'Unassigned / Savings', sub: 'Every dollar needs a job — put this toward savings or goals', pct: null, target: income, actual: unassigned, color: '#16a34a', savings: true, rawAmt: unassigned },
+    ];
+  }
+
+  document.getElementById('budgetMonthlyBars').innerHTML = buckets.map(b => {
+    const isZero = plan.isZeroBased;
+    const pctOfIncome = income > 0 ? (b.actual / income) * 100 : 0;
+    const fillPct  = isZero ? Math.min(pctOfIncome, 100) : Math.min((b.actual / b.target) * 100, 100);
+    const rawRatio = isZero ? pctOfIncome : (b.target > 0 ? (b.actual / b.target) * 100 : 0);
+
+    let barClass, statusText, statusClass;
+    if (b.savings) {
+      if (rawRatio >= 100)      { barClass = 'good'; statusClass = 'good'; statusText = `✅ On track — ${fmt(b.actual)} saved`; }
+      else if (rawRatio >= 70)  { barClass = 'warn'; statusClass = 'warn'; statusText = `⚠️ ${fmt(b.target - b.actual)} short of target`; }
+      else                       { barClass = 'over'; statusClass = 'over'; statusText = `⚠️ ${fmt(b.target - b.actual)} short of target`; }
+    } else {
+      if (rawRatio > 100)       { barClass = 'over'; statusClass = 'over'; statusText = `🚨 ${fmt(b.actual - b.target)} over budget`; }
+      else if (rawRatio > 85)   { barClass = 'warn'; statusClass = 'warn'; statusText = `⚠️ ${fmt(b.target - b.actual)} remaining`; }
+      else                       { barClass = 'good'; statusClass = 'good'; statusText = `✅ ${fmt(b.target - b.actual)} remaining`; }
+    }
+
+    const pctLabel = b.pct != null ? ` (${b.pct}%)` : '';
+    const targetLine = isZero
+      ? `<span style="color:var(--text-muted)">${fmt(b.actual)} of ${fmt(income)} income = ${pctOfIncome.toFixed(0)}%</span>`
+      : `<span style="color:var(--text-muted)">${fmt(b.actual)} actual &nbsp;/&nbsp; ${fmt(b.target)} target</span>`;
+
+    return `<div class="budget-bucket">
+      <div class="budget-bucket-header">
+        <div>
+          <div class="budget-bucket-label" style="color:${b.color}">${b.label}${pctLabel}</div>
+          <div class="budget-bucket-sub">${b.sub}</div>
+        </div>
+        <div class="budget-bucket-nums">${targetLine}</div>
+      </div>
+      <div class="budget-bar-track">
+        <div class="budget-bar-fill ${barClass}" style="width:${fillPct.toFixed(1)}%;background:${b.color};opacity:${barClass==='good'?'1':'1'}"></div>
+      </div>
+      <div class="budget-bar-status ${statusClass}">${statusText}</div>
+    </div>`;
+  }).join('');
+}
 
 // ============================================================
 // BUDGET PLANS
