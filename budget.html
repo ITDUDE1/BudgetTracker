@@ -501,6 +501,27 @@ input::placeholder { color: #c1c9d4; }
 .pay-year-table .past-month { color: var(--text-muted); }
 .pay-year-table .total-row td { background: var(--gray-light); font-weight: 700; }
 
+/* ── Savings tab ── */
+.saving-card { border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:12px; background:var(--card); }
+.saving-card:last-child { margin-bottom:0; }
+.saving-card-header { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:10px; }
+.saving-name  { font-size:1rem; font-weight:800; }
+.saving-sub   { font-size:0.8rem; color:var(--text-muted); margin-top:2px; }
+.saving-actions { display:flex; gap:6px; flex-shrink:0; }
+.saving-period-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 0; border-top:1px solid var(--border); }
+.saving-period-label { font-size:0.8rem; color:var(--text-muted); flex:1; min-width:100px; }
+.saving-period-status { font-size:0.85rem; font-weight:700; }
+.saving-period-status.saved   { color:var(--green); }
+.saving-period-status.partial { color:var(--orange); }
+.saving-period-status.unsaved { color:var(--text-muted); }
+.saving-goal-wrap { margin-top:10px; }
+.saving-goal-label { display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px; color:var(--text-muted); font-weight:600; }
+.saving-summary-card { background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%); color:white; border-radius:14px; padding:16px; margin-bottom:12px; }
+.saving-summary-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px; margin-top:10px; }
+.saving-summary-cell { text-align:center; }
+.saving-summary-cell .val { font-size:1.25rem; font-weight:800; }
+.saving-summary-cell .lbl { font-size:0.72rem; opacity:0.8; margin-top:2px; }
+
 /* ── Bill payment status ── */
 .bill-pay-row { display:flex; align-items:center; gap:10px; margin-top:6px; padding-top:6px; border-top:1px solid var(--border); flex-wrap:wrap; }
 .bill-pay-status { font-size:0.82rem; font-weight:700; flex:1; min-width:120px; }
@@ -570,6 +591,7 @@ input::placeholder { color: #c1c9d4; }
   <button class="tab-btn" data-tab="debts"     onclick="switchTab('debts')">💳 Debts</button>
   <button class="tab-btn" data-tab="expenses"  onclick="switchTab('expenses')">🛒 Expenses</button>
   <button class="tab-btn" data-tab="budget"    onclick="switchTab('budget')">🎯 Budget</button>
+  <button class="tab-btn" data-tab="savings"   onclick="switchTab('savings')">🏦 Savings</button>
   <button class="tab-btn" data-tab="plans"     onclick="switchTab('plans')">📐 Plans</button>
 </nav>
 
@@ -919,6 +941,56 @@ input::placeholder { color: #c1c9d4; }
 
   </section>
 
+  <!-- ─────────────── SAVINGS ─────────────── -->
+  <section class="tab-content" id="tab-savings">
+
+    <div class="card">
+      <div class="card-title">➕ Add a Savings Goal</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Goal Name</label>
+          <input type="text" id="savName" placeholder="e.g. Emergency Fund, Vacation">
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="savType" onchange="toggleSavAmountField()">
+            <option value="custom">Custom Amount</option>
+            <option value="plan">Based on Budget Plan</option>
+          </select>
+        </div>
+        <div class="form-group" id="savAmountGroup">
+          <label>Amount per Period ($)</label>
+          <input type="number" id="savAmount" placeholder="0.00" min="0" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Frequency</label>
+          <select id="savFreq">
+            <option value="percheck">Per Paycheck</option>
+            <option value="monthly" selected>Monthly</option>
+            <option value="weekly">Weekly</option>
+            <option value="annual">Yearly</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Total Goal ($) <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+          <input type="number" id="savGoalTotal" placeholder="e.g. 10000" min="0" step="0.01">
+        </div>
+        <div class="form-group" style="justify-content:flex-end">
+          <label>&nbsp;</label>
+          <button class="btn btn-green" onclick="addSaving()">➕ Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="savingsSummaryWrap"></div>
+
+    <div class="card" id="savingsListCard">
+      <div class="card-title">🏦 My Savings Goals</div>
+      <div id="savingsItems"></div>
+    </div>
+
+  </section>
+
   <!-- ─────────────── BUDGET PLANS ─────────────── -->
   <section class="tab-content" id="tab-plans">
 
@@ -1002,6 +1074,24 @@ input::placeholder { color: #c1c9d4; }
 </div>
 
 <!-- ══════════════════════════════════════════════
+     SAVINGS CONTRIBUTION MODAL
+══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="savingContribModal">
+  <div class="modal-box">
+    <div class="modal-title" id="savingContribTitle">🏦 Log Contribution</div>
+    <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px" id="savingContribSub"></div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Amount Saved ($)</label>
+      <input type="number" id="savingContribAmount" placeholder="0.00" min="0.01" step="0.01">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeSavingContribModal()">Cancel</button>
+      <button class="btn btn-green" onclick="submitSavingContrib()">✅ Log Contribution</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
      BILL PAYMENT MODAL
 ══════════════════════════════════════════════ -->
 <div class="modal-overlay" id="billPayModal">
@@ -1052,7 +1142,7 @@ input::placeholder { color: #c1c9d4; }
 // ============================================================
 // DATA LAYER
 // ============================================================
-let appData = { income: [], bills: [], debts: [], expenses: [], payLog: [] };
+let appData = { income: [], bills: [], debts: [], expenses: [], payLog: [], savings: [] };
 let editState = { type: null, id: null };
 let paymentState = { debtId: null };
 let billPayState = { billId: null };
@@ -1070,6 +1160,7 @@ function loadData() {
         debts:    parsed.debts    || [],
         expenses: parsed.expenses || [],
         payLog:   parsed.payLog   || [],
+        savings:  parsed.savings  || [],
       };
     }
   } catch (e) {
@@ -1243,7 +1334,7 @@ function switchTab(tabName) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tabName).classList.add('active');
   document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-  const renders = { dashboard: renderDashboard, income: renderIncome, bills: renderBills, debts: renderDebts, expenses: renderExpenses, budget: renderBudgetTab, plans: renderBudgetPlans };
+  const renders = { dashboard: renderDashboard, income: renderIncome, bills: renderBills, debts: renderDebts, expenses: renderExpenses, budget: renderBudgetTab, savings: renderSavings, plans: renderBudgetPlans };
   if (renders[tabName]) renders[tabName]();
 }
 
@@ -1968,6 +2059,263 @@ function openEditBill(id) {
 }
 
 // ============================================================
+// SAVINGS
+// ============================================================
+let savingContribState = { savingId: null };
+
+const SAVING_FREQ_LABELS = { percheck: 'Per Paycheck', weekly: 'Weekly', monthly: 'Monthly', annual: 'Yearly' };
+
+function toggleSavAmountField() {
+  const isPlan = document.getElementById('savType').value === 'plan';
+  document.getElementById('savAmountGroup').style.display = isPlan ? 'none' : '';
+}
+
+// Returns the period key string for the current period of a saving item.
+function getSavingPeriodKey(item) {
+  const now = new Date();
+  if (item.frequency === 'monthly')  return currentMonthKey();
+  if (item.frequency === 'annual')   return String(now.getFullYear());
+  if (item.frequency === 'weekly') {
+    const jan1     = new Date(now.getFullYear(), 0, 1);
+    const week     = Math.ceil(((now - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+    return `${now.getFullYear()}-W${String(week).padStart(2, '0')}`;
+  }
+  // percheck — use most recent payday as key
+  const anchor = appData.income.find(i =>
+    (i.payType || 'salary') === 'salary' && i.lastPayDate &&
+    (i.frequency === 'biweekly' || i.frequency === 'weekly')
+  );
+  if (!anchor) return currentMonthKey();
+  const interval   = anchor.frequency === 'weekly' ? 7 : 14;
+  const base       = parseLocalDate(anchor.lastPayDate);
+  const daysSince  = Math.floor((Date.now() - base) / 86400000);
+  const n          = Math.floor(daysSince / interval);
+  const paydayMs   = base + n * interval * 86400000;
+  const d          = new Date(paydayMs);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// Human-readable label for the current period.
+function getSavingPeriodLabel(item) {
+  const key = getSavingPeriodKey(item);
+  if (item.frequency === 'monthly') {
+    const [y, m] = key.split('-');
+    return new Date(+y, +m - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  }
+  if (item.frequency === 'annual')  return `Year ${key}`;
+  if (item.frequency === 'weekly')  return `Week ${key.split('-W')[1]}`;
+  return `Paycheck of ${key}`;
+}
+
+// Target amount for a single period.
+function getSavingTargetAmount(item) {
+  if (item.type === 'plan') {
+    const mk       = currentMonthKey();
+    const income   = appData.income.reduce((s, i) => s + getIncomeForMonth(i, mk), 0);
+    const plan     = BUDGET_PLANS.find(p => p.id === selectedBudgetPlan) || BUDGET_PLANS[0];
+    let   savPct   = 20; // default savings %
+    if (!plan.isZeroBased) {
+      const sb = plan.buckets.find(b => /sav/i.test(b.label));
+      if (sb) savPct = sb.pct;
+    }
+    const monthly = income * savPct / 100;
+    if (item.frequency === 'monthly') return monthly;
+    if (item.frequency === 'annual')  return monthly * 12;
+    if (item.frequency === 'weekly')  return monthly / 4.33;
+    // percheck
+    const anchor = appData.income.find(i =>
+      (i.payType || 'salary') === 'salary' && i.lastPayDate &&
+      (i.frequency === 'biweekly' || i.frequency === 'weekly')
+    );
+    if (anchor) {
+      const paydays = getPaydaysInMonth(anchor.lastPayDate, anchor.frequency, mk);
+      return paydays > 0 ? monthly / paydays : monthly / 2;
+    }
+    return monthly / 2;
+  }
+  return item.amount || 0;
+}
+
+function addSaving() {
+  const name      = document.getElementById('savName').value.trim();
+  const type      = document.getElementById('savType').value;
+  const frequency = document.getElementById('savFreq').value;
+  const goalTotal = parseFloat(document.getElementById('savGoalTotal').value) || null;
+  if (!name) { alert('Please enter a name for this savings goal.'); return; }
+  let amount = null;
+  if (type === 'custom') {
+    amount = parseFloat(document.getElementById('savAmount').value);
+    if (!amount || amount <= 0) { alert('Please enter a valid amount.'); return; }
+  }
+  appData.savings.push({ id: uuid(), name, type, amount, frequency, goalTotal, contributions: {} });
+  saveData();
+  document.getElementById('savName').value      = '';
+  document.getElementById('savAmount').value    = '';
+  document.getElementById('savGoalTotal').value = '';
+  renderSavings();
+  showToast('Savings goal added! ✓');
+}
+
+function deleteSaving(id) {
+  appData.savings = appData.savings.filter(s => s.id !== id);
+  saveData();
+  renderSavings();
+}
+
+function markSavingPeriod(id) {
+  const s = appData.savings.find(s => s.id === id);
+  if (!s) return;
+  const key    = getSavingPeriodKey(s);
+  const target = getSavingTargetAmount(s);
+  if (s.contributions[key] >= target) {
+    delete s.contributions[key]; // toggle off
+  } else {
+    s.contributions[key] = target;
+  }
+  saveData();
+  renderSavings();
+  showToast(s.contributions[key] ? 'Marked as saved! ✓' : 'Cleared.');
+}
+
+function openSavingContribModal(id) {
+  const s = appData.savings.find(s => s.id === id);
+  if (!s) return;
+  savingContribState.savingId = id;
+  const target = getSavingTargetAmount(s);
+  document.getElementById('savingContribTitle').textContent = `🏦 Log — ${s.name}`;
+  document.getElementById('savingContribSub').textContent   =
+    `${getSavingPeriodLabel(s)}  ·  Target: ${fmt(target)}`;
+  document.getElementById('savingContribAmount').value = target.toFixed(2);
+  document.getElementById('savingContribModal').classList.add('open');
+}
+
+function closeSavingContribModal() {
+  document.getElementById('savingContribModal').classList.remove('open');
+  savingContribState.savingId = null;
+}
+
+function submitSavingContrib() {
+  const s      = appData.savings.find(s => s.id === savingContribState.savingId);
+  if (!s) return;
+  const amount = parseFloat(document.getElementById('savingContribAmount').value);
+  if (!amount || amount <= 0) { alert('Please enter a valid amount.'); return; }
+  const key = getSavingPeriodKey(s);
+  s.contributions[key] = amount;
+  saveData();
+  closeSavingContribModal();
+  renderSavings();
+  showToast('Contribution logged! ✓');
+}
+
+function renderSavings() {
+  const wrap    = document.getElementById('savingsSummaryWrap');
+  const listEl  = document.getElementById('savingsItems');
+
+  if (appData.savings.length === 0) {
+    wrap.innerHTML = '';
+    listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">🏦</div>
+      <p>No savings goals yet.<br><strong>Click "➕ Add" above to create your first goal!</strong></p></div>`;
+    return;
+  }
+
+  // Build summary
+  const mk = currentMonthKey();
+  let totalMonthlyTarget = 0, totalMonthlyContrib = 0;
+  appData.savings.forEach(s => {
+    const target = getSavingTargetAmount(s);
+    // Normalise to monthly for summary
+    const monthly = s.frequency === 'annual'  ? target / 12
+                  : s.frequency === 'weekly'  ? target * 4.33
+                  : s.frequency === 'percheck'? target * ((() => {
+                      const a = appData.income.find(i => (i.payType||'salary')==='salary'&&i.lastPayDate&&(i.frequency==='biweekly'||i.frequency==='weekly'));
+                      return a ? getPaydaysInMonth(a.lastPayDate, a.frequency, mk) : 2;
+                    })())
+                  : target;
+    totalMonthlyTarget += monthly;
+    // Sum contributions for current period (latest periodKey for this item)
+    const key = getSavingPeriodKey(s);
+    totalMonthlyContrib += s.contributions[key] || 0;
+  });
+
+  const totalAllTime = appData.savings.reduce((sum, s) =>
+    sum + Object.values(s.contributions).reduce((a, v) => a + v, 0), 0);
+
+  wrap.innerHTML = `
+    <div class="saving-summary-card">
+      <div style="font-size:0.78rem;opacity:0.8;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Savings Overview</div>
+      <div class="saving-summary-grid">
+        <div class="saving-summary-cell"><div class="val">${fmt(totalMonthlyTarget)}</div><div class="lbl">Monthly Target</div></div>
+        <div class="saving-summary-cell"><div class="val">${fmt(totalMonthlyContrib)}</div><div class="lbl">This Period</div></div>
+        <div class="saving-summary-cell"><div class="val">${fmt(totalAllTime)}</div><div class="lbl">All-Time Saved</div></div>
+      </div>
+    </div>`;
+
+  // Render each savings goal
+  listEl.innerHTML = appData.savings.map(s => {
+    const key         = getSavingPeriodKey(s);
+    const target      = getSavingTargetAmount(s);
+    const contributed = s.contributions[key] || 0;
+    const periodLabel = getSavingPeriodLabel(s);
+    const freqLabel   = SAVING_FREQ_LABELS[s.frequency] || s.frequency;
+    const isMarked    = contributed >= target && target > 0;
+    const isPartial   = contributed > 0 && !isMarked;
+    const planBadge   = s.type === 'plan'
+      ? `<span class="chip chip-blue" style="font-size:0.72rem">Auto (${(BUDGET_PLANS.find(p=>p.id===selectedBudgetPlan)||BUDGET_PLANS[0]).name})</span>`
+      : '';
+
+    let statusClass, statusText;
+    if (isMarked)         { statusClass = 'saved';   statusText = `✅ Saved ${fmt(contributed)}`; }
+    else if (isPartial)   { statusClass = 'partial'; statusText = `⚠️ Partial — ${fmt(contributed)} of ${fmt(target)}`; }
+    else                  { statusClass = 'unsaved'; statusText = `⬜ Not saved yet — ${fmt(target)} target`; }
+
+    const markLabel  = isMarked ? `✕ Unmark` : `✅ Mark Saved (${fmt(target)})`;
+    const markClass  = isMarked ? 'btn-ghost' : 'btn-green';
+
+    // All-time total saved
+    const allTimeSaved = Object.values(s.contributions).reduce((a, v) => a + v, 0);
+
+    // Goal progress bar
+    let goalHtml = '';
+    if (s.goalTotal) {
+      const pct  = Math.min((allTimeSaved / s.goalTotal) * 100, 100);
+      const cls  = pct >= 100 ? 'good' : pct >= 60 ? 'info' : 'warn';
+      goalHtml = `
+        <div class="saving-goal-wrap">
+          <div class="saving-goal-label">
+            <span>Goal: ${fmt(allTimeSaved)} saved of ${fmt(s.goalTotal)}</span>
+            <span>${pct.toFixed(0)}%</span>
+          </div>
+          <div class="budget-bar-track">
+            <div class="budget-bar-fill ${cls}" style="width:${pct.toFixed(1)}%"></div>
+          </div>
+        </div>`;
+    } else if (allTimeSaved > 0) {
+      goalHtml = `<div style="font-size:0.8rem;color:var(--text-muted);margin-top:8px">All-time saved: <strong>${fmt(allTimeSaved)}</strong></div>`;
+    }
+
+    return `
+      <div class="saving-card">
+        <div class="saving-card-header">
+          <div>
+            <div class="saving-name">${esc(s.name)}</div>
+            <div class="saving-sub">${fmt(target)} ${freqLabel.toLowerCase()} ${planBadge}</div>
+          </div>
+          <div class="saving-actions">
+            <button class="btn btn-icon btn-sm" title="Log Custom Amount" onclick="openSavingContribModal('${s.id}')">✏️</button>
+            <button class="btn btn-icon btn-sm" title="Delete" onclick="deleteSaving('${s.id}')">🗑️</button>
+          </div>
+        </div>
+        ${goalHtml}
+        <div class="saving-period-row">
+          <div class="saving-period-label">${periodLabel}</div>
+          <div class="saving-period-status ${statusClass}">${statusText}</div>
+          <button class="btn btn-sm ${markClass}" onclick="markSavingPeriod('${s.id}')">${markLabel}</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ============================================================
 // DEBTS
 // ============================================================
 function addDebt() {
@@ -2321,6 +2669,7 @@ function importData(event) {
         bills:    Array.isArray(imported.bills)    ? imported.bills    : [],
         debts:    Array.isArray(imported.debts)    ? imported.debts    : [],
         expenses: Array.isArray(imported.expenses) ? imported.expenses : [],
+        savings:  Array.isArray(imported.savings)  ? imported.savings  : [],
       };
       saveData();
       switchTab('dashboard');
@@ -2340,7 +2689,10 @@ document.getElementById('editModal').addEventListener('click',    e => { if (e.t
 document.getElementById('confirmModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
 document.getElementById('paymentModal').addEventListener('click', e => { if (e.target === e.currentTarget) closePaymentModal(); });
 document.getElementById('payLogModal').addEventListener('click',  e => { if (e.target === e.currentTarget) closePayLogModal(); });
-document.getElementById('billPayModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeBillPayModal(); });
+document.getElementById('billPayModal').addEventListener('click',       e => { if (e.target === e.currentTarget) closeBillPayModal(); });
+document.getElementById('savingContribModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeSavingContribModal(); });
+
+toggleSavAmountField();
 
 // Initialise the last-pay-date field visibility on page load
 toggleIncLastPayDate();
