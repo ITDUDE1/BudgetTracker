@@ -438,6 +438,28 @@ input::placeholder { color: #c1c9d4; }
 .plan-compare-status.warn { color: var(--orange); }
 .plan-compare-status.bad  { color: var(--red); }
 
+/* ── Yearly pay table ── */
+.pay-year-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 6px; }
+.pay-year-table th { background: var(--gray-light); color: var(--text-muted); font-weight: 700; text-align: center; padding: 6px 4px; border-bottom: 2px solid var(--border); }
+.pay-year-table th.row-label { text-align: left; padding-left: 10px; }
+.pay-year-table td { text-align: center; padding: 6px 4px; border-bottom: 1px solid var(--border); }
+.pay-year-table td.row-label { text-align: left; padding-left: 10px; font-weight: 600; }
+.pay-year-table tr:last-child td { border-bottom: none; font-weight: 700; }
+.pay-year-table .bump-month { background: #dcfce7; color: var(--green); font-weight: 700; }
+.pay-year-table .cur-month  { outline: 2px solid var(--blue); outline-offset: -2px; }
+.pay-year-table .past-month { color: var(--text-muted); }
+.pay-year-table .total-row td { background: var(--gray-light); font-weight: 700; }
+
+/* ── Pay log (hourly) ── */
+.paylog-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+.paylog-item:last-child { border-bottom: none; }
+.paylog-date  { color: var(--text-muted); font-size: 0.8rem; margin-top: 1px; }
+.paylog-del   { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 2px 6px; border-radius: 6px; }
+.paylog-del:hover { background: var(--red-light); color: var(--red); }
+
+/* ── Pay type chip ── */
+.chip-teal   { background: #ccfbf1; color: #0f766e; }
+
 /* ── Header import label ── */
 .import-label {
   padding: 6px 12px;
@@ -564,20 +586,32 @@ input::placeholder { color: #c1c9d4; }
       <div class="form-row">
         <div class="form-group">
           <label>Name</label>
-          <input type="text" id="incName" placeholder="e.g. My Job, Social Security">
+          <input type="text" id="incName" placeholder="e.g. My Job, Side Gig">
         </div>
         <div class="form-group">
-          <label>Amount ($)</label>
+          <label>Pay Type</label>
+          <select id="incPayType" onchange="toggleIncLastPayDate()">
+            <option value="salary">Salary / Fixed</option>
+            <option value="hourly">Hourly / Variable</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Amount per Paycheck ($)</label>
           <input type="number" id="incAmount" placeholder="0.00" min="0" step="0.01">
         </div>
         <div class="form-group">
           <label>How often paid?</label>
-          <select id="incFreq">
-            <option value="monthly">Monthly</option>
+          <select id="incFreq" onchange="toggleIncLastPayDate()">
             <option value="biweekly">Every 2 Weeks</option>
             <option value="weekly">Weekly</option>
+            <option value="semimonthly">Twice a Month (1st &amp; 15th)</option>
+            <option value="monthly">Monthly</option>
             <option value="annual">Once a Year</option>
           </select>
+        </div>
+        <div class="form-group" id="incLastPayDateGroup">
+          <label>Last Paycheck Date</label>
+          <input type="date" id="incLastPayDate">
         </div>
         <div class="form-group" style="justify-content:flex-end">
           <label>&nbsp;</label>
@@ -590,9 +624,19 @@ input::placeholder { color: #c1c9d4; }
       <div class="card-title">💰 My Income Sources</div>
       <div id="incomeItems"></div>
       <div class="total-row" id="incomeTotalRow" style="display:none">
-        <span>Total Monthly Income</span>
+        <span>This Month's Total Income</span>
         <span id="incomeTotal" style="color:var(--green)">$0</span>
       </div>
+    </div>
+
+    <div class="card" id="incomeYearCard" style="display:none">
+      <div class="card-title">📅 Payday Calendar — <span id="incomeYearLabel"></span></div>
+      <div style="overflow-x:auto"><div id="incomeYearTable"></div></div>
+    </div>
+
+    <div class="card" id="payLogCard" style="display:none">
+      <div class="card-title">📝 Hourly Pay Log</div>
+      <div id="payLogItems"></div>
     </div>
 
   </section>
@@ -824,16 +868,38 @@ input::placeholder { color: #c1c9d4; }
 </div>
 
 <!-- ══════════════════════════════════════════════
+     LOG PAYCHECK MODAL
+══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="payLogModal">
+  <div class="modal-box">
+    <div class="modal-title">💵 Log a Paycheck</div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Amount Received ($)</label>
+      <input type="number" id="payLogAmount" placeholder="0.00" min="0.01" step="0.01">
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label>Date Received</label>
+      <input type="date" id="payLogDate">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closePayLogModal()">Cancel</button>
+      <button class="btn btn-green" onclick="submitPayLog()">✅ Log Paycheck</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
      JAVASCRIPT
 ══════════════════════════════════════════════ -->
 <script>
 // ============================================================
 // DATA LAYER
 // ============================================================
-let appData = { income: [], bills: [], debts: [], expenses: [] };
+let appData = { income: [], bills: [], debts: [], expenses: [], payLog: [] };
 let editState = { type: null, id: null };
 let paymentState = { debtId: null };
 let deleteState = { type: null, id: null };
+let payLogState = { incomeId: null };
 
 function loadData() {
   try {
@@ -845,6 +911,7 @@ function loadData() {
         bills:    parsed.bills    || [],
         debts:    parsed.debts    || [],
         expenses: parsed.expenses || [],
+        payLog:   parsed.payLog   || [],
       };
     }
   } catch (e) {
@@ -881,10 +948,90 @@ function showToast(msg) {
 // UTILITIES
 // ============================================================
 function toMonthly(amount, frequency) {
-  if (frequency === 'weekly')    return amount * 4.33;
-  if (frequency === 'biweekly')  return amount * 2.165;
-  if (frequency === 'annual')    return amount / 12;
+  if (frequency === 'weekly')      return amount * 4.33;
+  if (frequency === 'biweekly')    return amount * 2.165;
+  if (frequency === 'semimonthly') return amount * 2;
+  if (frequency === 'annual')      return amount / 12;
   return amount;
+}
+
+// Parse a YYYY-MM-DD date string in local time (avoids UTC midnight offset issues).
+function parseLocalDate(s) {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d).getTime();
+}
+
+// Count how many paydays (weekly or biweekly) fall within a given month.
+// lastPayDate anchors the pay cycle — every interval from that date is a payday.
+function getPaydaysInMonth(lastPayDate, frequency, yearMonth) {
+  const interval = frequency === 'weekly' ? 7 : 14;
+  const [y, m]   = yearMonth.split('-').map(Number);
+  const monthStart = new Date(y, m - 1, 1).getTime();
+  const monthEnd   = new Date(y, m, 0).getTime();
+  const base       = parseLocalDate(lastPayDate);
+  const MS_PER_DAY = 86400000;
+
+  // First payday on or after monthStart
+  const daysToStart = Math.round((monthStart - base) / MS_PER_DAY);
+  const n0 = Math.ceil(daysToStart / interval);
+
+  let count = 0;
+  for (let n = n0; base + n * interval * MS_PER_DAY <= monthEnd; n++) count++;
+  return count;
+}
+
+// Actual income for a given month (YYYY-MM).
+// Salary: uses real payday count. Hourly: sums logged paychecks.
+function getIncomeForMonth(item, yearMonth) {
+  if ((item.payType || 'salary') === 'hourly') {
+    return appData.payLog
+      .filter(p => p.incomeId === item.id && monthKey(p.date) === yearMonth)
+      .reduce((s, p) => s + p.amount, 0);
+  }
+  switch (item.frequency) {
+    case 'monthly':     return item.amount;
+    case 'semimonthly': return item.amount * 2;
+    case 'annual':      return item.amount / 12;
+    case 'weekly':
+    case 'biweekly':
+      if (!item.lastPayDate) {
+        // No anchor date — use conservative count (never inflates)
+        return item.amount * (item.frequency === 'weekly' ? 4 : 2);
+      }
+      return item.amount * getPaydaysInMonth(item.lastPayDate, item.frequency, yearMonth);
+    default: return item.amount;
+  }
+}
+
+// Year-to-date income for the current calendar year (Jan through current month).
+function getYTDIncome(item) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const curMonth = now.getMonth() + 1;
+  let total = 0;
+  for (let m = 1; m <= curMonth; m++) {
+    total += getIncomeForMonth(item, `${year}-${String(m).padStart(2, '0')}`);
+  }
+  return total;
+}
+
+// Projected full-year income based on all 12 months.
+function getProjectedAnnual(item) {
+  const year = new Date().getFullYear();
+  let total = 0;
+  for (let m = 1; m <= 12; m++) {
+    total += getIncomeForMonth(item, `${year}-${String(m).padStart(2, '0')}`);
+  }
+  return total;
+}
+
+// Rolling 12-month sum for hourly income (last 12 complete months + current).
+function getRolling12(item) {
+  const cutoff = new Date();
+  cutoff.setFullYear(cutoff.getFullYear() - 1);
+  return appData.payLog
+    .filter(p => p.incomeId === item.id && new Date(p.date) >= cutoff)
+    .reduce((s, p) => s + p.amount, 0);
 }
 
 function fmt(n) {
@@ -904,7 +1051,7 @@ function currentMonthKey() {
 }
 
 function freqLabel(f) {
-  return ({ weekly: 'Weekly', biweekly: 'Every 2 Weeks', annual: 'Yearly' })[f] || 'Monthly';
+  return ({ weekly: 'Weekly', biweekly: 'Every 2 Weeks', semimonthly: 'Twice a Month', annual: 'Yearly' })[f] || 'Monthly';
 }
 
 function chipColor(type) {
@@ -950,7 +1097,7 @@ let barChart = null;
 
 function calcSummary() {
   const mk = currentMonthKey();
-  const totalIncome  = appData.income.reduce((s, i) => s + toMonthly(i.amount, i.frequency), 0);
+  const totalIncome  = appData.income.reduce((s, i) => s + getIncomeForMonth(i, mk), 0);
   const totalBills   = appData.bills.reduce((s, b) => s + b.amount, 0);
   const totalDebtMin = appData.debts.reduce((s, d) => s + d.minimumPayment, 0);
   const monthExp     = appData.expenses.filter(e => monthKey(e.date) === mk).reduce((s, e) => s + e.amount, 0);
@@ -1096,57 +1243,259 @@ function quickAddExpense() {
 // ============================================================
 // INCOME
 // ============================================================
+function toggleIncLastPayDate() {
+  const payType = document.getElementById('incPayType').value;
+  const freq    = document.getElementById('incFreq').value;
+  const show    = payType === 'salary' && (freq === 'weekly' || freq === 'biweekly');
+  document.getElementById('incLastPayDateGroup').style.display = show ? '' : 'none';
+}
+
 function addIncome() {
-  const name      = document.getElementById('incName').value.trim();
-  const amount    = parseFloat(document.getElementById('incAmount').value);
-  const frequency = document.getElementById('incFreq').value;
-  if (!name)              { alert('Please enter a name for this income source.'); return; }
+  const name        = document.getElementById('incName').value.trim();
+  const payType     = document.getElementById('incPayType').value;
+  const amount      = parseFloat(document.getElementById('incAmount').value);
+  const frequency   = document.getElementById('incFreq').value;
+  const lastPayDate = document.getElementById('incLastPayDate').value;
+  if (!name)                  { alert('Please enter a name for this income source.'); return; }
   if (!amount || amount <= 0) { alert('Please enter a valid amount.'); return; }
-  appData.income.push({ id: uuid(), name, amount, frequency });
+  const needsAnchor = payType === 'salary' && (frequency === 'weekly' || frequency === 'biweekly');
+  if (needsAnchor && !lastPayDate) { alert('Please enter your last paycheck date so pay days can be calculated accurately.'); return; }
+  appData.income.push({ id: uuid(), name, payType, amount, frequency, lastPayDate: lastPayDate || null });
   saveData();
   document.getElementById('incName').value = '';
   document.getElementById('incAmount').value = '';
+  document.getElementById('incLastPayDate').value = '';
   renderIncome();
   renderDashboard();
   showToast('Income source added! ✓');
 }
 
 function renderIncome() {
-  const container = document.getElementById('incomeItems');
-  const totalRow  = document.getElementById('incomeTotalRow');
+  const container  = document.getElementById('incomeItems');
+  const totalRow   = document.getElementById('incomeTotalRow');
+  const yearCard   = document.getElementById('incomeYearCard');
+  const payLogCard = document.getElementById('payLogCard');
+
   if (appData.income.length === 0) {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">💰</div><p>No income sources yet.<br><strong>Click "➕ Add" above to get started!</strong></p></div>`;
     totalRow.style.display = 'none';
+    yearCard.style.display = 'none';
+    payLogCard.style.display = 'none';
     return;
   }
+
+  const mk  = currentMonthKey();
   let total = 0;
+
   container.innerHTML = appData.income.map(item => {
-    const monthly = toMonthly(item.amount, item.frequency);
+    const payType  = item.payType || 'salary';
+    const monthly  = getIncomeForMonth(item, mk);
     total += monthly;
-    const equiv = item.frequency !== 'monthly' ? `<span style="margin-left:4px">${fmt(monthly)}/mo equivalent</span>` : '';
+
+    const payTypeChip = payType === 'hourly'
+      ? `<span class="chip chip-teal">Hourly</span>`
+      : `<span class="chip chip-green">Salary</span>`;
+    const freqChip = `<span class="chip chip-gray">${freqLabel(item.frequency)}</span>`;
+
+    let detail = '';
+    if (payType === 'hourly') {
+      const rolling = getRolling12(item);
+      const logs    = appData.payLog.filter(p => p.incomeId === item.id && monthKey(p.date) === mk);
+      const loggedThisMonth = logs.reduce((s, p) => s + p.amount, 0);
+      detail = `
+        <div class="item-meta" style="margin-top:4px;font-size:0.8rem;color:var(--text-muted)">
+          This month logged: <strong style="color:var(--green)">${fmt(loggedThisMonth)}</strong>
+          &nbsp;·&nbsp; Rolling 12mo: <strong>${fmt(rolling)}</strong>
+          &nbsp;·&nbsp; Avg/mo: <strong>${fmt(rolling / 12)}</strong>
+        </div>`;
+    } else if (item.lastPayDate && (item.frequency === 'weekly' || item.frequency === 'biweekly')) {
+      const paydays = getPaydaysInMonth(item.lastPayDate, item.frequency, mk);
+      const ytd     = getYTDIncome(item);
+      const proj    = getProjectedAnnual(item);
+      const paydayLabel = paydays === 1 ? '1 payday' : `${paydays} paydays`;
+      detail = `
+        <div class="item-meta" style="margin-top:4px;font-size:0.8rem;color:var(--text-muted)">
+          ${paydayLabel} this month &nbsp;·&nbsp; YTD: <strong>${fmt(ytd)}</strong> &nbsp;·&nbsp; Projected: <strong>${fmt(proj)}/yr</strong>
+        </div>`;
+    } else {
+      const proj = getProjectedAnnual(item);
+      detail = `
+        <div class="item-meta" style="margin-top:4px;font-size:0.8rem;color:var(--text-muted)">
+          Projected: <strong>${fmt(proj)}/yr</strong>
+        </div>`;
+    }
+
+    const logBtn = payType === 'hourly'
+      ? `<button class="btn btn-icon btn-sm" title="Log Paycheck" onclick="openLogPaycheck('${item.id}')">💵</button>`
+      : '';
+
     return `
-      <div class="list-item">
-        <div class="item-info">
+      <div class="list-item" style="flex-wrap:wrap">
+        <div class="item-info" style="flex:1;min-width:200px">
           <div class="item-name">${esc(item.name)}</div>
-          <div class="item-meta">
-            <span class="chip chip-green">${freqLabel(item.frequency)}</span>${equiv}
-          </div>
+          <div class="item-meta">${payTypeChip}${freqChip}</div>
+          ${detail}
         </div>
-        <div class="item-amount" style="color:var(--green)">${fmt(item.amount)}</div>
-        <div class="item-actions">
-          <button class="btn btn-icon btn-sm" title="Edit" onclick="openEditIncome('${item.id}')">✏️</button>
-          <button class="btn btn-icon btn-sm" title="Delete" onclick="confirmDelete('income','${item.id}')">🗑️</button>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+          <div class="item-amount" style="color:var(--green)">${fmt(monthly)}<span style="font-size:0.72rem;font-weight:500;color:var(--text-muted)">/mo</span></div>
+          <div class="item-actions">
+            ${logBtn}
+            <button class="btn btn-icon btn-sm" title="Edit" onclick="openEditIncome('${item.id}')">✏️</button>
+            <button class="btn btn-icon btn-sm" title="Delete" onclick="confirmDelete('income','${item.id}')">🗑️</button>
+          </div>
         </div>
       </div>`;
   }).join('');
+
   totalRow.style.display = 'flex';
   document.getElementById('incomeTotal').textContent = fmt(total);
+
+  renderYearlyBreakdown();
+  renderPayLog();
+}
+
+function renderYearlyBreakdown() {
+  const yearCard = document.getElementById('incomeYearCard');
+  // Only show for salary weekly/biweekly with an anchor date
+  const salaryItems = appData.income.filter(i =>
+    (i.payType || 'salary') === 'salary' &&
+    (i.frequency === 'weekly' || i.frequency === 'biweekly') &&
+    i.lastPayDate
+  );
+  if (salaryItems.length === 0) { yearCard.style.display = 'none'; return; }
+
+  const year    = new Date().getFullYear();
+  const curMk   = currentMonthKey();
+  document.getElementById('incomeYearLabel').textContent = year;
+
+  const MONTHS  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // Header row
+  let html = `<table class="pay-year-table"><thead><tr>
+    <th class="row-label">Source</th>
+    ${MONTHS.map((mo, i) => {
+      const ym = `${year}-${String(i+1).padStart(2,'0')}`;
+      return `<th${ym === curMk ? ' class="cur-month"' : ''}>${mo}</th>`;
+    }).join('')}
+    <th>Annual</th>
+  </tr></thead><tbody>`;
+
+  // One row per salary biweekly/weekly source
+  salaryItems.forEach(item => {
+    const annual = getProjectedAnnual(item);
+    html += `<tr><td class="row-label">${esc(item.name)}</td>`;
+    for (let m = 1; m <= 12; m++) {
+      const ym      = `${year}-${String(m).padStart(2,'0')}`;
+      const count   = getPaydaysInMonth(item.lastPayDate, item.frequency, ym);
+      const amt     = item.amount * count;
+      const isCur   = ym === curMk;
+      const isPast  = ym < curMk;
+      const isBump  = count > (item.frequency === 'weekly' ? 4 : 2);
+      let cls = '';
+      if (isCur)  cls = 'cur-month';
+      if (isBump) cls = (isCur ? 'cur-month ' : '') + 'bump-month';
+      if (isPast && !isBump && !isCur) cls = 'past-month';
+      html += `<td class="${cls}" title="${count} payday${count!==1?'s':''}">${fmt(amt)}</td>`;
+    }
+    html += `<td>${fmt(annual)}</td></tr>`;
+  });
+
+  // Total row if multiple sources
+  if (salaryItems.length > 1 || appData.income.length > salaryItems.length) {
+    html += `<tr class="total-row"><td class="row-label">All Income</td>`;
+    for (let m = 1; m <= 12; m++) {
+      const ym  = `${year}-${String(m).padStart(2,'0')}`;
+      const tot = appData.income.reduce((s, i) => s + getIncomeForMonth(i, ym), 0);
+      const isCur = ym === curMk;
+      html += `<td${isCur ? ' class="cur-month"' : ''}>${fmt(tot)}</td>`;
+    }
+    const annualAll = appData.income.reduce((s, i) => s + getProjectedAnnual(i), 0);
+    html += `<td>${fmt(annualAll)}</td></tr>`;
+  }
+
+  html += `</tbody></table>
+    <p style="font-size:0.75rem;color:var(--text-muted);margin-top:8px">
+      Highlighted months have an extra paycheck. Hover a cell to see the payday count.
+    </p>`;
+
+  document.getElementById('incomeYearTable').innerHTML = html;
+  yearCard.style.display = 'block';
+}
+
+function renderPayLog() {
+  const payLogCard = document.getElementById('payLogCard');
+  const hourlyItems = appData.income.filter(i => (i.payType || 'salary') === 'hourly');
+  if (hourlyItems.length === 0) { payLogCard.style.display = 'none'; return; }
+
+  const logs = [...appData.payLog].sort((a, b) => b.date.localeCompare(a.date));
+
+  let html = '';
+  hourlyItems.forEach(item => {
+    const itemLogs = logs.filter(p => p.incomeId === item.id);
+    html += `<div style="font-weight:700;margin:10px 0 6px">${esc(item.name)}
+      <button class="btn btn-sm" style="margin-left:8px;font-size:0.75rem" onclick="openLogPaycheck('${item.id}')">+ Log Paycheck</button>
+    </div>`;
+    if (itemLogs.length === 0) {
+      html += `<p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:8px">No paychecks logged yet.</p>`;
+    } else {
+      itemLogs.slice(0, 12).forEach(p => {
+        html += `<div class="paylog-item">
+          <div>
+            <div style="font-weight:600">${fmt(p.amount)}</div>
+            <div class="paylog-date">${p.date}</div>
+          </div>
+          <button class="paylog-del" title="Delete" onclick="deletePayLog('${p.id}')">✕</button>
+        </div>`;
+      });
+      if (itemLogs.length > 12) {
+        html += `<p style="font-size:0.8rem;color:var(--text-muted);margin-top:4px">+ ${itemLogs.length - 12} older entries</p>`;
+      }
+    }
+  });
+
+  document.getElementById('payLogItems').innerHTML = html;
+  payLogCard.style.display = 'block';
+}
+
+function openLogPaycheck(incomeId) {
+  payLogState.incomeId = incomeId;
+  document.getElementById('payLogAmount').value = '';
+  document.getElementById('payLogDate').value   = today();
+  document.getElementById('payLogModal').classList.add('open');
+}
+
+function closePayLogModal() {
+  document.getElementById('payLogModal').classList.remove('open');
+  payLogState.incomeId = null;
+}
+
+function submitPayLog() {
+  const amount = parseFloat(document.getElementById('payLogAmount').value);
+  const date   = document.getElementById('payLogDate').value;
+  if (!amount || amount <= 0) { alert('Please enter a valid paycheck amount.'); return; }
+  if (!date)                  { alert('Please select the date you received this paycheck.'); return; }
+  appData.payLog.push({ id: uuid(), incomeId: payLogState.incomeId, date, amount });
+  saveData();
+  closePayLogModal();
+  renderIncome();
+  renderDashboard();
+  showToast('Paycheck logged! ✓');
+}
+
+function deletePayLog(id) {
+  appData.payLog = appData.payLog.filter(p => p.id !== id);
+  saveData();
+  renderIncome();
+  renderDashboard();
+  showToast('Entry removed.');
 }
 
 function openEditIncome(id) {
   const item = appData.income.find(i => i.id === id);
   if (!item) return;
   editState = { type: 'income', id };
+  const payType = item.payType || 'salary';
+  const showDate = payType === 'salary' && (item.frequency === 'weekly' || item.frequency === 'biweekly');
   document.getElementById('editModalTitle').textContent = '✏️ Edit Income Source';
   document.getElementById('editModalBody').innerHTML = `
     <div class="form-group" style="margin-bottom:13px">
@@ -1154,19 +1503,38 @@ function openEditIncome(id) {
       <input type="text" id="eField1" value="${esc(item.name)}">
     </div>
     <div class="form-group" style="margin-bottom:13px">
-      <label>Amount ($)</label>
+      <label>Pay Type</label>
+      <select id="eField4" onchange="toggleEditLastPayDate()">
+        <option value="salary" ${payType==='salary'?'selected':''}>Salary / Fixed</option>
+        <option value="hourly" ${payType==='hourly'?'selected':''}>Hourly / Variable</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:13px">
+      <label>Amount per Paycheck ($)</label>
       <input type="number" id="eField2" value="${item.amount}" min="0" step="0.01">
     </div>
     <div class="form-group" style="margin-bottom:13px">
       <label>How often paid?</label>
-      <select id="eField3">
-        <option value="monthly"  ${item.frequency==='monthly'  ?'selected':''}>Monthly</option>
-        <option value="biweekly" ${item.frequency==='biweekly' ?'selected':''}>Every 2 Weeks</option>
-        <option value="weekly"   ${item.frequency==='weekly'   ?'selected':''}>Weekly</option>
-        <option value="annual"   ${item.frequency==='annual'   ?'selected':''}>Once a Year</option>
+      <select id="eField3" onchange="toggleEditLastPayDate()">
+        <option value="biweekly"    ${item.frequency==='biweekly'    ?'selected':''}>Every 2 Weeks</option>
+        <option value="weekly"      ${item.frequency==='weekly'      ?'selected':''}>Weekly</option>
+        <option value="semimonthly" ${item.frequency==='semimonthly' ?'selected':''}>Twice a Month (1st &amp; 15th)</option>
+        <option value="monthly"     ${item.frequency==='monthly'     ?'selected':''}>Monthly</option>
+        <option value="annual"      ${item.frequency==='annual'      ?'selected':''}>Once a Year</option>
       </select>
+    </div>
+    <div class="form-group" id="editLastPayDateGroup" style="margin-bottom:13px;display:${showDate?'':'none'}">
+      <label>Last Paycheck Date</label>
+      <input type="date" id="eField5" value="${item.lastPayDate || ''}">
     </div>`;
   document.getElementById('editModal').classList.add('open');
+}
+
+function toggleEditLastPayDate() {
+  const pt   = document.getElementById('eField4').value;
+  const freq = document.getElementById('eField3').value;
+  const show = pt === 'salary' && (freq === 'weekly' || freq === 'biweekly');
+  document.getElementById('editLastPayDateGroup').style.display = show ? '' : 'none';
 }
 
 // ============================================================
@@ -1527,9 +1895,11 @@ function saveEdit() {
   if (type === 'income') {
     const item = appData.income.find(i => i.id === id);
     if (!item) return;
-    item.name      = document.getElementById('eField1').value.trim() || item.name;
-    item.amount    = parseFloat(document.getElementById('eField2').value) || item.amount;
-    item.frequency = document.getElementById('eField3').value;
+    item.name        = document.getElementById('eField1').value.trim() || item.name;
+    item.payType     = document.getElementById('eField4').value;
+    item.amount      = parseFloat(document.getElementById('eField2').value) || item.amount;
+    item.frequency   = document.getElementById('eField3').value;
+    item.lastPayDate = document.getElementById('eField5')?.value || null;
   } else if (type === 'bills') {
     const item = appData.bills.find(b => b.id === id);
     if (!item) return;
@@ -1615,6 +1985,7 @@ function importData(event) {
       if (!confirm('⚠️ This will replace ALL your current data with the imported backup.\n\nAre you sure you want to continue?')) return;
       appData = {
         income:   Array.isArray(imported.income)   ? imported.income   : [],
+        payLog:   Array.isArray(imported.payLog)   ? imported.payLog   : [],
         bills:    Array.isArray(imported.bills)    ? imported.bills    : [],
         debts:    Array.isArray(imported.debts)    ? imported.debts    : [],
         expenses: Array.isArray(imported.expenses) ? imported.expenses : [],
@@ -1636,6 +2007,10 @@ function importData(event) {
 document.getElementById('editModal').addEventListener('click',    e => { if (e.target === e.currentTarget) closeModal(); });
 document.getElementById('confirmModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
 document.getElementById('paymentModal').addEventListener('click', e => { if (e.target === e.currentTarget) closePaymentModal(); });
+document.getElementById('payLogModal').addEventListener('click',  e => { if (e.target === e.currentTarget) closePayLogModal(); });
+
+// Initialise the last-pay-date field visibility on page load
+toggleIncLastPayDate();
 
 // ============================================================
 // BUDGET PLANS
@@ -1697,7 +2072,8 @@ const BUDGET_PLANS = [
 ];
 
 function renderBudgetPlans() {
-  const income = appData.income.reduce((s, i) => s + toMonthly(i.amount, i.frequency), 0);
+  const mk     = currentMonthKey();
+  const income = appData.income.reduce((s, i) => s + getIncomeForMonth(i, mk), 0);
   const notice  = document.getElementById('plansIncomeNotice');
   const content = document.getElementById('plansContent');
 
@@ -1710,7 +2086,6 @@ function renderBudgetPlans() {
   content.style.display = 'block';
   document.getElementById('plansIncomeDisplay').textContent = fmt(income);
 
-  const mk        = currentMonthKey();
   const totalBills    = appData.bills.reduce((s, b) => s + b.amount, 0);
   const totalDebtMin  = appData.debts.reduce((s, d) => s + d.minimumPayment, 0);
   const totalExpenses = appData.expenses.filter(e => monthKey(e.date) === mk).reduce((s, e) => s + e.amount, 0);
